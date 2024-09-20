@@ -1,14 +1,14 @@
 clear; close all;
 % Constants
-U = 7e3;         % Voltage across thing
+U = 14e3;         % Voltage across thing
 p = 100e3;              % Pressure in Pa
 A = 11.25;          % Constant for air in Pa^(-1) m^(-1)
 B = 273.75;           % Constant for air in V Pa^(-1) m^(-1)
 gamma = 1/p;       % Secondary electron emission coefficient
 d_heild=3e-3;
-width=0.1e-3;            % Thickness of dielectric material (initial)
-d1 = (d_heild-width)/2
-d3=d1
+width=0.015e-3;            % Thickness of dielectric material (initial)
+d1 = (d_heild-width)/2;
+d3=d1;
 eps = [4,1,4];
 d = [d1 width d3];
 
@@ -19,18 +19,18 @@ k = 0;
 widths = [];
 breakdowns = [];
 voltages = [];
-while width<d_heild
-    [~,E2,~] = EField(d,eps,U);
+while width<d_heild/20
     width = width + 1e-8;
     d1 = (d_heild-width)/2;
     d3=d1;
     Ub = breakdown(width,B,p,A,gamma);
+    [~,E2,~] = EField(d,eps,U);
     V = E2*width;
     k = k+1;
     widths(k) = width;
     breakdowns(k) = Ub;
     voltages(k) = V;
-    if abs(Ub-V)<0.01
+    if abs(Ub-V)<1
         BDwidth = width;
         BDVoltage = V;
     end
@@ -43,7 +43,8 @@ plot(1000*widths, voltages,'DisplayName','Actual Voltage Across')
 plot(BDwidth*1000, BDVoltage, 'ro', 'MarkerSize', 10, 'DisplayName', 'Intersection');
 text(BDwidth*1000, BDVoltage, [' X = ' num2str(BDwidth*1000),'mm'], 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
 legend('show')
-xlabel('bubble width (mm)')
+xlabel('Bubble width (mm)')
+ylabel('Voltage [V]')
 hold off
 
         
