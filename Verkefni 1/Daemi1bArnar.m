@@ -42,6 +42,8 @@ hold on
 plot(1000*widths, voltages,'DisplayName','Actual Voltage Across')
 plot(BDwidth*1000, BDVoltage, 'ro', 'MarkerSize', 10, 'DisplayName', 'Intersection');
 text(BDwidth*1000, BDVoltage, [' X = ' num2str(BDwidth*1000),'mm'], 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
+text(BDwidth*1000, BDVoltage-120, [' V = ' num2str(floor(BDVoltage)),'V'], 'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
+
 legend('show')
 xlabel('Bubble width (mm)')
 ylabel('Voltage [V]')
