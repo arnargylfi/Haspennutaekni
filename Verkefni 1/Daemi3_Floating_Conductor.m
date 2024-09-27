@@ -36,6 +36,7 @@ Conductor3 = [1; 0.225; 6.575; 0.01325; 0; 0; 0; 0; 0; 0];  % Circle with center
 % PowerLine conductor 4 (one phase) is defined by a circle by 1, x_center, y_center, radius
 Conductor4 = [1; -0.225; 6.575; 0.01325; 0; 0; 0; 0; 0; 0];  % Circle with center (0.125, 0.125) and radius 0.025
 
+C_dist=2;   % Case 1: No sphere, Case 2: 2m, case 3: 3m, case 4: 4m, case 5: 5m. Also change sphereX value in parallel.
 sphereRadius=0.325;
 sphereX=2;  % X coordinate for the floating conductor sphere
 sphereY=6.8;
@@ -85,7 +86,7 @@ emagmodel.VacuumPermittivity = 8.8541878128E-12;
 electromagneticProperties(emagmodel, "RelativePermittivity", 1);
 
 % Inner region (air gap with relative permittivity of approximately 1)
-electromagneticProperties(emagmodel, "RelativePermittivity", 10^9, "Face", 2);
+electromagneticProperties(emagmodel, "RelativePermittivity", 10^9, "Face", 2);  
 
 % Specify the electrostatic potential at conductors
 % In this case, the inner boundary consists of edges [3 4 5 8] (based on edge labels)
@@ -94,12 +95,15 @@ electromagneticBC(emagmodel, "Voltage", 200000, "Edge", [5,6,7,8,9,10,11,12,13,1
 % Specify the electrostatic potential at the outer boundaries
 % In this case, the outer boundary consists of edges [1 2 7 6] (based on edge labels)
 electromagneticBC(emagmodel, "Voltage", 0, "Edge", [1 2 3 4]);
+%electromagneticBC(emagmodel, "Voltage", 0, "Edge", [1 2 3 4 21 22 23 24]);
+%electromagneticBC(emagmodel, "Voltage", 0, "Edge", [21 22 23 24]);
 
 % Generate the mesh
 %generateMesh(emagmodel);
 %generateMesh(emagmodel, 'Hmax', 0.1)
 
-meshEdges = {[5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], 0.05};  % Edges selected for increased mesh density  
+meshEdges = {[5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], 0.05};  % With sphere. Edges selected for increased mesh density  
+%meshEdges = {[5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20], 0.05};  % Without sphere. Edges selected for increased mesh density  
 
 % Generate the mesh and information about it
 generateMesh(emagmodel,'Hmax', 0.2,'Hedge',meshEdges);
@@ -177,9 +181,17 @@ FieldmeasurepointY = sphereY;                        %front left of the sphere
 % Extract and plot the electric potential
 figure;
 pdeplot(emagmodel, "XYData", u, "Contour", "on")
+title('Electric Potential Magnitude [V]');
 axis equal
+axis tight
 xlabel('[m]') 
 ylabel('[m]') 
+%clim([0 100000]);  % Set the color axis limits
+hold on;
+% Set the edge color (for all lines) to black so that the gap region is visible
+pdegplot(emagmodel, 'EdgeLabels', 'off', 'FaceAlpha', 0);
+h = findall(gca, 'Type', 'Line');
+set(h, 'Color', 'k', 'LineWidth', 1.0); % Set edge color to black and line width
 
 % Interpolate the potential at the measurement point from the computed solution
 V_at_contour_point = F(FieldmeasurepointX, FieldmeasurepointY);
@@ -189,14 +201,14 @@ text_x = FieldmeasurepointX;  % X-coordinate for the text
 text_y = 9;   % Y-coordinate for the text
 
 % Convert the potential and electric field magnitude to strings for display
-text_V_contour = ['V = ', num2str(V_at_contour_point, '%.2f'), ' V (contour)'];  % Potential at point from contour
-%text_Vmagnitude = ['E = ', num2str(round(V_magnitude), '%d'), ' V/m (calculated)']; % Electric potential magnitude at point
+%text_V_contour = ['V = ', num2str(V_at_contour_point, '%.2f'), ' V (contour)'];  % Potential at point from contour
+%%text_Vmagnitude = ['E = ', num2str(round(V_magnitude), '%d'), ' V/m (calculated)']; % Electric potential magnitude at point
 
 % Display the values on the plot
-text(text_x, text_y, text_V_contour, 'FontSize', 12, 'Color', 'k');     % Display potential
+%%text(text_x, text_y, text_V_contour, 'FontSize', 12, 'Color', 'k');     % Display potential
 %text(text_x, text_y - 0.2, text_Vmagnitude, 'FontSize', 12, 'Color', 'k'); % Display electric field magnitude
 hold on;
-plot(FieldmeasurepointX, FieldmeasurepointY, 'ko', 'MarkerSize', 6, 'LineWidth', 2); % Mark the measurement point
+%%plot(FieldmeasurepointX, FieldmeasurepointY, 'ko', 'MarkerSize', 6, 'LineWidth', 2); % Mark the measurement point
 
 % Display the results in the command window
 disp(['Electric potential at (', num2str(FieldmeasurepointX), ', ', num2str(FieldmeasurepointY), '):']);
@@ -208,7 +220,42 @@ disp(['Electric field at (', num2str(FieldmeasurepointX), ', ', num2str(Fieldmea
 
 % Define the range of x-values (m) for which to calculate the electric potential field
 %x_values = [0, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
-x_values = [1,1.2,1.4, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.001, 2.6, 2.8, 3, 4, 5, 6, 7,];
+%x_values = [1,1.2,1.4, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.001, 2.6, 2.8, 3, 4, 5, 6, 7,];
+%x_values = [1, 1.5, 1.6, FieldmeasurepointX-0.014, FieldmeasurepointX+2*sphereRadius+0.031, 2.4, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6,5, 7];
+%x_values = [1, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 2.4, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6,5, 7];
+
+switch(C_dist)  % The x position in m for the floating sphere. See Xsphere above.
+    
+    case 1  % Without sphere
+    % Define the range of x-values (m) for which to calculate the electric field  
+    x_values = [1, 1.5, 1.6, 1.655, 2, 2.355, 2.4, 2.5, 2.6, 2.655, 3, 3.355, 3.4, 3.5, 3.6, 3.655, 4, 4.355, 4.4, 4.5, 4.6, 4.655, 5, 5.355, 5.4, 5.5, 6, 6.5, 7];
+    
+    case 2
+    % Define the range of x-values (m) for which to calculate the electric field
+    %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+    x_values = [1, 1.5, 1.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 2.4, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+    %x_values = [1, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 2.4, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6,5, 7];
+   
+    case 3
+    % Define the range of x-values (m) for which to calculate the electric field
+    %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+    x_values = [1, 1.5, 2, 2.5, 2.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 3.4, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+    %x_values = [1, 1.5, 2, 2.5, 2.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 3.4, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+
+    case 4
+    % Define the range of x-values (m) for which to calculate the electric field
+    %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+    x_values = [1, 1.5, 2, 2.5, 3, 3.5, 3.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 4.4, 4.5, 5, 5.5, 6, 6.5, 7];
+    %x_values = [1, 1.5, 2, 2.5, 3, 3.5, 3.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 4.4, 4.5, 5, 5.5, 6, 6.5, 7];
+
+    case 5
+    % Define the range of x-values (m) for which to calculate the electric field
+    %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+    x_values = [1, 1.5, 2, 2.5, 3, 3.5, 4.0, 4.5, 4.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 5.4, 5.5, 6, 6.5, 7];
+    %x_values = [1, 1.5, 2, 2.5, 3, 3.5, 4.0, 4.5, 4.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 5.4, 5.5, 6, 6.5, 7];
+
+end
+
 
 % Initialize array to store electric potential values (V)
 V_at_contour_points = zeros(size(x_values));
@@ -237,9 +284,33 @@ grid on;
 disp('Electric potential (V) at corresponding distances (m):');
 disp(table(x_values', V_at_contour_points', 'VariableNames', {'Distance_m', 'Electric_Potential_V'}));
 
-% Define the range of x-values (m) for which to calculate the electric field
-%x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
-x_values = [1, 1.5, 1.6, FieldmeasurepointX-0.014, FieldmeasurepointX+2*sphereRadius+0.031, 2.4,2.5, 3, 3.5, 4, 4.5, 5,];
+% switch(C_dist)  % The x position in m for the floating sphere. See Xsphere above.
+% 
+%     case 2
+%     % Define the range of x-values (m) for which to calculate the electric field
+%     %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+%     x_values = [1, 1.5, 1.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 2.4, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+%     %x_values = [1, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 2.4, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+% 
+%     case 3
+%     % Define the range of x-values (m) for which to calculate the electric field
+%     %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+%     x_values = [1, 1.5, 2, 2.5, 2.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 3.4, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+%     %x_values = [1, 1.5, 2, 2.5, 2.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 3.4, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7];
+% 
+%     case 4
+%     % Define the range of x-values (m) for which to calculate the electric field
+%     %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+%     x_values = [1, 1.5, 2, 2.5, 3, 3.5, 3.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 4.4, 4.5, 5, 5.5, 6, 6.5, 7];
+%     %x_values = [1, 1.5, 2, 2.5, 3, 3.5, 3.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 4.4, 4.5, 5, 5.5, 6, 6.5, 7];
+% 
+%     case 5
+%     % Define the range of x-values (m) for which to calculate the electric field
+%     %x_values = [0.1, 1, 1.4, 1.5, 1.6, FieldmeasurepointX, FieldmeasurepointX + sphereRadius * 2 + 0.002, 2.4, 2.5, 2.6, 3, 4, 5, 6, 7,];
+%     x_values = [1, 1.5, 2, 2.5, 3, 3.5, 4.0, 4.5, 4.6, FieldmeasurepointX-0.019, FieldmeasurepointX+2*sphereRadius+0.031, 5.4, 5.5, 6, 6.5, 7];
+%     %x_values = [1, 1.5, 2, 2.5, 3, 3.5, 4.0, 4.5, 4.6, FieldmeasurepointX, FieldmeasurepointX+2*sphereRadius+0.002, 5.4, 5.5, 6, 6.5, 7];
+% 
+% end
 
 % Initialize array to store electric field magnitudes (V/m)
 E_magnitudes = zeros(size(x_values));
@@ -291,8 +362,8 @@ for i = 1:length(x_values)
     
 end
 
-j=5;
-E_at_contour_point=E_magnitudes(j); % I am selecting the point nr. 2 which is the one in front of the sphere.
+j=4;    % Selection of jth point
+E_at_contour_point=E_magnitudes(j); % Selecting the E magnitude at jth point.
 
 % Plot the relationship between distance (m) and electric field magnitude (V/m)
 figure;
@@ -314,22 +385,24 @@ fprintf('Maximum Electric Field Magnitude: %.4f\n', max_E_magnitude);
 figure;
 pdeplot(emagmodel, 'XYData', E_magnitude, 'Contour', 'on');
 %pdeplot(emagmodel, 'XYData', E_magnitude_log, 'Contour', 'on');
-title('Electric Field Magnitude');
+title('Electric Field Magnitude [V/m]');
 axis equal;
 xlabel('[m]');
 ylabel('[m]');
-clim([0 50000]);  % Set the color axis limits
+clim([0 60000]);  % Set the color axis limits
 hold on;
 pdegplot(emagmodel, 'EdgeLabels', 'off', 'FaceAlpha', 0);
-% Convert the electric field magnitude to a string for display
-text_E_contour = ['E = ', num2str(E_at_contour_point, '%.2f'), ' V/m (contour)'];  % E_field magnitude at point from contour
+
+% Converting the electric field magnitude "E_at_countour_point" to a string for display
+%%text_E_contour = ['E = ', num2str(E_at_contour_point, '%.2f'), ' V/m (contour)'];  % E_field magnitude at point from contour   
+
 % Display the values on the plot
 %text(text_x, text_y, text_E_contour, 'FontSize', 12, 'Color', 'k');     % Display electric field magnitude
-text(x_values(j), text_y, text_E_contour, 'FontSize', 12, 'Color', 'k');     % Display electric field magnitude
+%%text(x_values(j), text_y, text_E_contour, 'FontSize', 12, 'Color', 'k');     % Display electric field magnitude (temporarily commented out) 
 %text(text_x, text_y - 0.2, text_Vmagnitude, 'FontSize', 12, 'Color', 'k'); % Display electric field magnitude
 hold on;
 %plot(FieldmeasurepointX, FieldmeasurepointY, 'ko', 'MarkerSize', 6, 'LineWidth', 2); % Mark the measurement point
-plot(x_values(j), FieldmeasurepointY, 'ko', 'MarkerSize', 6, 'LineWidth', 2); % Mark the measurement point
+%%plot(x_values(j), FieldmeasurepointY, 'ko', 'MarkerSize', 6, 'LineWidth', 2); % Mark the measurement point
 
 % Display the computed electric field values
 disp('Electric field magnitudes (V/m) at corresponding distances (m):');
